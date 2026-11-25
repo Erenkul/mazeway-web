@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#00849d">
+  <title>MazeWay: Block &amp; Race — play in your browser</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; overflow: hidden; overscroll-behavior: none; }
+    body { background: #00849d; color: #fff1d7; font: 1rem system-ui, sans-serif; }
+    main {
+      position: fixed; inset: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right)
+        env(safe-area-inset-bottom) env(safe-area-inset-left);
+      display: grid; place-items: center;
+    }
+    #game { position: relative; width: 100%; height: 100%; min-height: 0; }
+    @media (orientation: landscape) {
+      #game { max-width: 75vh; max-width: 75dvh; }
+    }
+    canvas { display: block; width: 100%; height: 100%; background: #08bdc2; touch-action: none; }
+    #loader {
+      position: absolute; inset: 0; padding: 24px;
+      display: grid; place-content: center; justify-items: center; gap: 20px;
+      background: #00849d; text-align: center;
+    }
+    #loader[hidden] { display: none; }
+    #loader img { width: min(78vw, 320px); max-width: 100%; height: auto; }
+    progress { width: min(58vw, 240px); height: 16px; accent-color: #ffdc32; }
+    #error { max-width: 30ch; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="game">
+      <canvas id="unity-canvas" tabindex="-1" aria-label="MazeWay: Block &amp; Race"></canvas>
+      <div id="loader">
+        <img src="TemplateData/logo.png" alt="MazeWay: Block &amp; Race" width="640" height="213">
+        <progress id="progress" value="0" max="1" aria-label="Loading MazeWay"></progress>
+        <div id="error" role="alert" hidden></div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const canvas = document.getElementById("unity-canvas");
+    const loader = document.getElementById("loader");
+    const progress = document.getElementById("progress");
+    const error = document.getElementById("error");
+
+    function failed(message) {
+      progress.hidden = true;
+      error.hidden = false;
+      error.textContent = "MazeWay could not load. Reload the page to try again.";
+      console.error(message);
+    }
+
+    const script = document.createElement("script");
+    script.src = "Build/Web.loader.js";
+    script.onerror = failed;
+    script.onload = () => {
+      createUnityInstance(canvas, {
+        dataUrl: "Build/Web.data.unityweb",
+        frameworkUrl: "Build/Web.framework.js.unityweb",
+        codeUrl: "Build/Web.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "Alp Eren Kul",
+        productName: "MazeWay",
+        productVersion: "1.2.2",
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        // A browser that cannot decode AAC (VS Code's preview, some Linux builds) plays the
+        // game without sound instead of stopping it with an alert (25 November 2026).
+        errorHandler: (message) => {
+          if (/decode audio data|EncodingError/i.test(String(message))) { console.warn("MazeWay: sound off, " + message); return true; }
+          return false;
+        },
+      }, value => { progress.value = value; }).then(() => {
+        loader.hidden = true;
+      }).catch(failed);
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
